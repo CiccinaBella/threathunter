@@ -28,3 +28,11 @@ Codes retour : 0 = rien, 1 = résultats, 2 = incident ou résultat critique (pra
 
 ## Tests
     python -m unittest discover -s tests
+
+## Scripts de détection sur poste (`endpoint/`)
+Scripts autonomes en lecture seule pour rechercher des traces de malware directement sur une machine
+(démarrage automatique, processus, réseau, fichiers récents, comptes…) :
+- `endpoint/Detect-Malware.ps1` : Windows (PowerShell administrateur)
+- `endpoint/detect-malware-mac.sh` : macOS (`sudo ./detect-malware-mac.sh`)
+
+Voir `endpoint/README.md`.
