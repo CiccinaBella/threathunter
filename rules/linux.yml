@@ -1,0 +1,31 @@
+title: Reverse shell Linux
+id: TH-1001
+level: critical
+description: Motifs classiques de reverse shell (bash /dev/tcp, nc -e, python pty).
+tags: [attack.execution, attack.command_and_control, attack.t1059.004]
+detection:
+  selection:
+    command_line|contains: ['/dev/tcp/', 'nc -e', 'ncat -e', 'pty.spawn', 'socat exec:', 'mkfifo /tmp/']
+  condition: selection
+---
+title: Téléchargement puis exécution via sudo / shell
+id: TH-1002
+level: high
+description: curl/wget redirigé vers un interpréteur.
+tags: [attack.execution, attack.t1105, attack.t1059.004]
+detection:
+  selection:
+    command_line|re: '(curl|wget)\s+[^|]*\|\s*(sudo\s+)?(ba|z)?sh'
+  condition: selection
+---
+title: Ajout de clé SSH autorisée ou de compte privilégié
+id: TH-1003
+level: high
+description: Modification d'authorized_keys, useradd ou ajout au groupe sudo.
+tags: [attack.persistence, attack.t1098.004, attack.t1136.001]
+detection:
+  keys:
+    command_line|contains: 'authorized_keys'
+  user:
+    command_line|re: '(useradd|adduser|usermod\s+-aG\s+(sudo|wheel))'
+  condition: keys or user

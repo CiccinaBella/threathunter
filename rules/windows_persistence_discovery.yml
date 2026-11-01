@@ -1,0 +1,75 @@
+title: Persistance via clé Run du registre
+id: TH-0201
+level: medium
+description: Écriture d'une valeur dans une clé de démarrage automatique.
+tags: [attack.persistence, attack.t1547.001]
+detection:
+  selection:
+    event_id: 13
+    registry_key|contains: ['\currentversion\run', '\currentversion\runonce']
+  filter:
+    process|endswith: ['\msiexec.exe', '\onedrivesetup.exe']
+  condition: selection and not filter
+---
+title: Création de tâche planifiée
+id: TH-0202
+level: medium
+description: schtasks utilisé pour créer une tâche (persistance ou exécution différée).
+tags: [attack.persistence, attack.execution, attack.t1053.005]
+detection:
+  selection:
+    process|endswith: '\schtasks.exe'
+    command_line|contains: '/create'
+  condition: selection
+---
+title: Création de service suspecte
+id: TH-0203
+level: high
+description: Service installé pointant vers un binaire dans un répertoire inscriptible ou via cmd/powershell.
+tags: [attack.persistence, attack.privilege_escalation, attack.t1543.003]
+detection:
+  sc:
+    process|endswith: '\sc.exe'
+    command_line|contains: 'create'
+  path:
+    command_line|contains: ['\temp\', '\appdata\', '\users\public\', 'cmd /c', 'powershell']
+  condition: sc and path
+---
+title: Rafale de commandes de reconnaissance
+id: TH-0301
+level: low
+description: Commandes de découverte de l'environnement (souvent exécutées après compromission).
+tags: [attack.discovery, attack.t1087, attack.t1082, attack.t1016]
+detection:
+  selection:
+    process|endswith: ['\whoami.exe', '\net.exe', '\net1.exe', '\nltest.exe', '\systeminfo.exe', '\ipconfig.exe', '\quser.exe']
+  args:
+    command_line|contains: ['/all', 'group', 'domain_trusts', 'dclist', 'user /domain', 'localgroup administrators', 'whoami', 'systeminfo']
+  condition: selection and args
+---
+title: Effacement des journaux ou des clichés instantanés
+id: TH-0401
+level: critical
+description: Suppression des shadow copies ou des journaux d'événements (prélude à un rançongiciel).
+tags: [attack.impact, attack.defense_evasion, attack.t1490, attack.t1070.001]
+detection:
+  vss:
+    command_line|contains: ['delete shadows', 'shadowcopy delete', 'resize shadowstorage']
+  logs:
+    command_line|contains: ['wevtutil cl', 'clear-eventlog']
+  bcd:
+    command_line|contains: ['recoveryenabled no', 'bootstatuspolicy ignoreallfailures']
+  condition: 1 of them
+---
+title: Mouvement latéral via PsExec / WMI distant
+id: TH-0501
+level: high
+description: Exécution distante via PsExec, WMIC /node ou services PSEXESVC.
+tags: [attack.lateral_movement, attack.execution, attack.t1021.002, attack.t1047]
+detection:
+  psexec:
+    process|endswith: ['\psexec.exe', '\psexec64.exe', '\psexesvc.exe']
+  wmic:
+    process|endswith: '\wmic.exe'
+    command_line|contains|all: ['/node:', 'process call create']
+  condition: psexec or wmic

@@ -1,0 +1,56 @@
+title: PowerShell avec commande encodée
+id: TH-0001
+level: high
+description: PowerShell lancé avec un paramètre -EncodedCommand, technique courante d'obfuscation.
+tags: [attack.execution, attack.defense_evasion, attack.t1059.001, attack.t1027]
+detection:
+  selection_img:
+    process|endswith: ['\powershell.exe', '\pwsh.exe']
+  selection_cli:
+    command_line|contains: [' -enc ', ' -encodedcommand ', ' -e ', ' -ec ']
+  condition: selection_img and selection_cli
+falsepositives: [Outils d'administration légitimes (SCCM, Intune)]
+---
+title: Cradle de téléchargement PowerShell
+id: TH-0002
+level: high
+description: PowerShell téléchargeant et exécutant du code distant (IEX / DownloadString).
+tags: [attack.execution, attack.command_and_control, attack.t1059.001, attack.t1105]
+detection:
+  selection:
+    command_line|contains: ['downloadstring', 'downloadfile', 'invoke-webrequest', 'iwr ', 'net.webclient', 'start-bitstransfer']
+  exec:
+    command_line|contains: ['iex', 'invoke-expression', '| powershell', 'start-process']
+  condition: selection and exec
+---
+title: Processus enfant suspect d'une application Office
+id: TH-0003
+level: high
+description: Une application Office lance un interpréteur, signe typique d'une macro malveillante.
+tags: [attack.initial_access, attack.execution, attack.t1566.001, attack.t1204.002]
+detection:
+  parent:
+    parent_process|endswith: ['\winword.exe', '\excel.exe', '\powerpnt.exe', '\outlook.exe']
+  child:
+    process|endswith: ['\cmd.exe', '\powershell.exe', '\wscript.exe', '\cscript.exe', '\mshta.exe', '\rundll32.exe', '\regsvr32.exe']
+  condition: parent and child
+---
+title: Exécution via LOLBin (proxy binaire signé)
+id: TH-0004
+level: medium
+description: Utilisation de binaires Windows signés pour exécuter ou télécharger du contenu distant.
+tags: [attack.defense_evasion, attack.t1218]
+detection:
+  mshta:
+    process|endswith: '\mshta.exe'
+    command_line|contains: ['http', 'javascript:', 'vbscript:']
+  regsvr:
+    process|endswith: '\regsvr32.exe'
+    command_line|contains: ['/i:http', 'scrobj.dll']
+  certutil:
+    process|endswith: '\certutil.exe'
+    command_line|contains: ['-urlcache', '-decode', 'verifyctl']
+  rundll:
+    process|endswith: '\rundll32.exe'
+    command_line|contains: ['javascript:', 'url.dll,', 'shell32.dll,shellexec_rundll']
+  condition: 1 of them
